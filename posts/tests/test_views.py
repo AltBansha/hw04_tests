@@ -10,25 +10,24 @@ class PostPagesTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user_author = get_user_model().objects.create(
-            username='testuser')
+            username='testuser')      
 
-        posts = []
-        groups = []
-        for i in range(1, 3):
-            groups.append(
-                (Group(title='Тестовая группа' + str(i),
-                       slug='test-group' + str(i),
-                       description='Описание группы' + str(i))
-                 ))
+        Group.objects.bulk_create([
+            Group(
+                title=f'Тестовая группа {number}',
+                slug=f'test-group{number}',
+                description=f'Описание группы {number}',
+            ) for number in range(1, 3)
+        ])
 
-        Group.objects.bulk_create(groups)
-        for i in range(1, 3):
-            posts.append(Post(
-                text='Тестовая запись' + str(i),
+        Post.objects.bulk_create([
+            Post(
+                text=f'Тестовая запись {number}',
                 author=cls.user_author,
-                group=Group.objects.get(pk=i)
-            ))
-        Post.objects.bulk_create(posts)
+                group=Group.objects.get(pk=number),
+            ) for number in range(1, 3)
+        ])
+
 
     def setUp(self):
         self.guest_client = Client()
@@ -49,36 +48,20 @@ class PostPagesTests(TestCase):
                 response = self.authorized_client.get(reverse_name)
                 self.assertTemplateUsed(response, template)
 
-    def test_index_page_show_correct_context(self):
+    def test_index_page_containse_ten_records(self):
         """Шаблон index сформирован с правильным контекстом."""
-        response = self.authorized_client.get(reverse('index'))
+        response = self.guest_client.get(reverse('index'))
         # Взяли первый элемент из списка и проверили, что его содержание
         # совпадает с ожидаемым
-        context_post = {
-            'Тестовая запись1': response.context.get('page')[0].text,
-            'testuser': response.context.get('page')[0].author.username,
-            'Тестовая группа1': response.context.get('page')[0].group.title,
-        }
-
-        for text, expected in context_post.items():
-            with self.subTest():
-                self.assertEqual(text, expected)
+        self.assertEqual(response.context.get('page').object_list, list(Post.objects.all()[:10]))
 
     def test_context_in_group_page(self):
         """ Тестирование содержания context в group"""
         response = self.authorized_client.get(
             reverse('group', kwargs={'slug': 'test-group1'}))
 
-        context_group = {
-            'Тестовая запись1': response.context.get('page')[0].text,
-            'testuser': response.context.get('page')[0].author.username,
-            'Тестовая группа1': response.context.get('group').title,
-            'test-group1': response.context.get('group').slug,
-            'Описание группы1': response.context.get('group').description
-        }
-        for value, expected in context_group.items():
-            with self.subTest():
-                self.assertEqual(value, expected)
+        self.assertEqual(response.context.get('page').object_list[0], Post.objects.get(pk=1))
+
 
     def test_context_in_new_post_page(self):
         """ Тестирование содержания context при создании поста"""
@@ -95,9 +78,9 @@ class PostPagesTests(TestCase):
         """Шаблон profile сформирован с правильным контекстом."""
         response = self.guest_client.get(reverse('profile', kwargs={'username': 'testuser'}))
         context_page = {
-            'Тестовая запись1': response.context.get('page')[0].text,
+            'Тестовая запись 1': response.context.get('page')[0].text,
             'testuser': response.context.get('page')[0].author.username,
-            'Тестовая группа1': response.context.get('page')[0].group.title,
+            'Тестовая группа 1': response.context.get('page')[0].group.title,
         }
 
         for value, expected in context_page.items():
@@ -112,26 +95,13 @@ class PostPagesTests(TestCase):
                             'post_id': 1}))
 
         context_edit_page = {
-            'Тестовая запись1': response.context.get('post').text,
-            'Тестовая группа1': response.context.get('post').group.title,
+            'Тестовая запись 1': response.context.get('post').text,
+            'Тестовая группа 1': response.context.get('post').group.title,
         }
 
         for value, expected in context_edit_page.items():
             with self.subTest():
                 self.assertEqual(value, expected)
-
-    def test_post_is_in_index_page(self):
-        """Тестирование наличия поста на главной странице сайта"""
-        response = self.authorized_client.get(reverse('index'))
-        post_id = response.context.get('page')[0].pk = 1
-        self.assertEqual(post_id, 1)
-
-    def test_post_is_in_group_page(self):
-        """Тестирование наличия поста присвоенного группе на странице группы"""
-        response = self.authorized_client.get(
-            reverse('group', kwargs={'slug': 'test-group1'}))
-        post_id = response.context.get('page')[0].pk
-        self.assertEqual(post_id, 1)
 
     def test_post_is_in_correct_group(self):
         """Тестирование на правильность назначения групп для постов"""

@@ -8,21 +8,20 @@ from .models import Group, Post, User
 
 
 def index(request):
-    post_list = Post.objects.select_related("group").order_by("-pub_date")
+    post_list = Post.objects.select_related("group")
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
     return render(request,
                   "index.html",
                   {"page": page,
+                   "post_list": post_list,
                    "paginator": paginator})
-    # latest = Post.objects.order_by("-pub_date")[:10]
-    # return render(request, "index.html", {"posts": latest})
 
 
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    posts = group.posts.all().order_by("-pub_date")
+    posts = group.posts.all()
     paginator = Paginator(posts, 12)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
@@ -35,8 +34,6 @@ def group_posts(request, slug):
             "paginator": paginator,
         }
     )
-    # posts = group.posts.all().order_by("-pub_date")[:12]
-    # return render(request, "group.html", {"group": group, "posts": posts})
 
 
 def group_list(request):
@@ -58,45 +55,39 @@ def new_post(request):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    post_list = author.posts.all().order_by("-pub_date")
+    post_list = author.posts.all()
     post_count = post_list.count()
     paginator = Paginator(post_list, 5)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
-    return render(request, "posts/profile.html", {"page": page,
-                                                  "author": author,
-                                                  "post_count": post_count,
-                                                  "paginator": paginator})
+    context = {"page": page,
+               "author": author,
+               "post_count": post_count,
+               "paginator": paginator}
+    return render(request, "posts/profile.html", context)
 
 
 def post_view(request, username, post_id):
-    author = get_object_or_404(User, username=username)
-    post = get_object_or_404(Post, id=post_id, author=author)
-    count = Post.objects.filter(author=author).select_related("author").count()
-    return render(request, "posts/post.html", {"post": post,
-                                               "author": author,
-                                               "count": count})
+    post = get_object_or_404(Post,id=post_id, author__username=username)
+    count = Post.objects.count()
+    context = {"post": post,
+               "author": post.author,
+               "count": count}
+    return render(request, "posts/post.html", context)
 
 
 def post_edit(request, username, post_id):
-    author = User.objects.get(username=username)
-    post = get_object_or_404(Post, author=author, id=post_id)
-    if request.method == 'POST':
-        form = PostForm(request.POST, instance=post)
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.save()
-            return redirect(
-                "post",
-                username=request.user.username,
-                post_id=post.id
-            )
-    form = PostForm(instance=post)
-    return render(
-        request,
-        "posts/new.html", {
-            "form": form,
-            "post": post,
-            "is_edit": True,
-        }
-    )
+    post = get_object_or_404(Post, id=post_id, author__username=username)
+    if request.user != post.author:
+        return redirect("post", username=username, post_id=post_id)
+
+    form = PostForm(request.POST or None, instance=post)
+    if request.method == 'POST' and form.is_valid():
+        post = form.save()
+        return redirect("post",
+                        username=username,
+                        post_id=post_id)
+
+    return render(request, "posts/new.html", {"form": form,
+                                              "post": post,
+                                              "is_edit": True})

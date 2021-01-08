@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
+
 from posts.models import Group, Post
 
 
@@ -35,50 +36,61 @@ class PostURLTests(TestCase):
         response = self.guest_client.get('/')
         self.assertEqual(response.status_code, 200)
 
+    def test_index_url_for_authorized_users(self):
+        """Страница / доступна любому пользователю."""
+        response = self.authorized_client_1.get('/')
+        self.assertEqual(response.status_code, 200)
+
     def test_group_url_for_guest_users(self):
-        """Страница /group/<slug>/ доступна авторизованному пользователю."""
+        """Страница /group/<slug>/ доступна гостю."""
         response = self.guest_client.get('/group/test-group/')
+        self.assertEqual(response.status_code, 200)
+    
+    def test_group_url_for_authorized_users(self):
+        """Страница /group/<slug>/ доступна авторизованному пользователю."""
+        response = self.authorized_client_1.get('/group/test-group/')
         self.assertEqual(response.status_code, 200)
 
     def test_new_post_url_for_guest_users(self):
-        """Тестирование URL для неавторизованных пользователей."""
-    # Удостоверися, что редирект на sign up работает корректно
+        """Тестирование URL для неавторизованных пользователей.
+           Удостоверися, что редирект на sign up работает корректно."""
         response = self.guest_client.get(reverse('new_post'), follow=True)
         self.assertRedirects(
                     response, '/auth/login/?next=/new/')
 
-    def test_new_post_url_for_authorized_users(self):
-        """Страница /new/ доступна авторизованному пользователю."""
-        response = self.authorized_client_1.get('/new/')
-        self.assertEqual(response.status_code, 200)
+    def test_post_edit_url_for_another_authorized_users(self):
+        """Тестирование URL для неавтора поста.
+           Удостоверися, что редирект на страницу просмотра поста работает корректно."""
+        response = self.authorized_client_2.get(reverse('post_edit',
+                                                        kwargs={'username': 'testuser1',
+                                                                'post_id': 1}))
+        self.assertRedirects(response, '/testuser1/1/')
 
-    def test_profile_url(self):
-        response = self.authorized_client_1.get('/testuser1/')
-        self.assertEqual(response.status_code, 200)
+    def test_urls_for_authorized_users(self):
+        """Проверяем доступность страниц для авторизованного пользователя."""
+        urls = {
+            '/new/': 200,
+            '/about/author/': 200,
+            '/about/tech/': 200, 
+            '/testuser1/': 200,
+            '/testuser1/1/': 200,             
+            '/testuser1/1/edit/': 200,
+            '/testuser2/1/edit/': 404,
+        }
+        for key, value in urls.items():
+            response = self.authorized_client_1.get(key)  
+            self.assertEqual(response.status_code, value)
 
-    def test_user_post_url(self):
-        response = self.authorized_client_1.get('/testuser1/1/')
-        self.assertEqual(response.status_code, 200)
-
-    def test_user_post_edit_url(self):
-        response = self.authorized_client_1.get('/testuser1/1/edit/')
-        self.assertEqual(response.status_code, 200)
-    
-    def test_user_post_edit_other_url(self):
-        response = self.authorized_client_1.get('/testuser2/1/edit/')
-        self.assertEqual(response.status_code, 404)
-
-    def test_user_post_edit_url_for_guest_client(self):
-        response = self.guest_client.get('/testuser2/1/edit/')
-        self.assertEqual(response.status_code, 404)
-
-    def test_about_author_url_for_guest_client(self):
-        response = self.guest_client.get('/about/author/')
-        self.assertEqual(response.status_code, 200)
-
-    def test_about_tech_url_for_guest_client(self):
-        response = self.guest_client.get('/about/tech/')
-        self.assertEqual(response.status_code, 200)
+    def test_urls_for_guest_users(self):
+        """Проверяем доступность страниц для гостя."""
+        urls = { 
+            '/about/author/': 200,
+            '/about/tech/': 200,
+            '/testuser2/1/edit/': 404,
+        }
+        for key, value in urls.items():
+            response = self.guest_client.get(key)  
+            self.assertEqual(response.status_code, value)
 
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
