@@ -11,9 +11,9 @@ class Group(models.Model):
     slug = models.SlugField(unique=True,
                             max_length=100)
     description = models.TextField('Описание',
-                                    max_length=400,
-                                    help_text='Описание группы. '
-                                              'Не более 400 символов.')
+                                   max_length=400,
+                                   help_text='Описание группы. '
+                                             'Не более 400 символов.')
 
     def __str__(self):
         return self.title
@@ -32,9 +32,8 @@ class Post(models.Model):
                               blank=True,
                               null=True,
                               help_text=('Выберете группу, в которой хотите '
-                                         'опубликовать Вашу запись.')
-        )
-    
+                                         'опубликовать Вашу запись.'))
+
     class Meta:
         ordering = ['-pub_date']
 

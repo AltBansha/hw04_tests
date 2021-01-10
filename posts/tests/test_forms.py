@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
+
 from posts.models import Group, Post
 
 
@@ -13,8 +14,8 @@ class NewPost_FormTest(TestCase):
                                          slug='test-group',
                                          description='Описание')
         # создадим авторизованного пользователя
-        cls.authorized_user = Client()
-        cls.authorized_user.force_login(cls.user)
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
 
         cls.form_data = {
             'text': 'Тестовая запись',
@@ -23,15 +24,26 @@ class NewPost_FormTest(TestCase):
 
     def test_forms_new_post(self):
         """Тестируем форму новых сообщений на странице New_Post"""
-        # данные для создания нового поста
-        
-        response = self.authorized_user.post(
+
+        response = self.authorized_client.post(
             reverse('new_post'),
             data=self.form_data,
             follow=True
         )
         # проверяем правильность redirect после создания нового поста
         self.assertRedirects(response, reverse('index'))
+
+    def test_form_new_post_saved(self):
+        """Проверяем, что пост сохранился в базе."""
+
+        self.authorized_client.post(
+            reverse('new_post'),
+            data=self.form_data,
+            follow=True
+        )
+
+        self.assertEqual(Post.objects.get(pk=1).text,
+                         NewPost_FormTest.form_data['text'])
 
 
 class PostEdit_FormTest(TestCase):
@@ -49,8 +61,8 @@ class PostEdit_FormTest(TestCase):
                                        group=cls.group)
 
         # создадим авторизованного пользователя
-        cls.authorized_user = Client()
-        cls.authorized_user.force_login(cls.user)
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
 
         cls.form_data = {
             'text': 'Тестовая запись_брысь',
@@ -60,12 +72,13 @@ class PostEdit_FormTest(TestCase):
     def test_forms_post_edit(self):
         """Тестируем форму исправления сообщений на странице New_Post"""
 
-        response = self.authorized_user.post(
+        response = self.authorized_client.post(
             reverse('post_edit',
                     kwargs={'username': 'testuser',
                             'post_id': '1'}),
             data=PostEdit_FormTest.form_data,
-            follow=True)
+            follow=True
+        )
 
-        self.assertEqual(response.context['post'].text, PostEdit_FormTest.form_data['text'])
-
+        self.assertEqual(response.context['post'].text,
+                         PostEdit_FormTest.form_data['text'])

@@ -13,13 +13,13 @@ class PostModelTest(TestCase):
             username='testuser',
             first_name='FirstNameUser',
             last_name='LastNameUser'
-            )
+        )
 
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='test-group',
             description='test-group-description'
-            )
+        )
 
         cls.post = Post.objects.create(
             text='Тестовая запись',
@@ -90,16 +90,20 @@ class PostModelTest(TestCase):
                      ' проверьте help_text в Group'))
 
     def test_group_str_value(self):
-        """Тестируем значение __str__  в модели Group
-            он должен возвращать название группы"""
+        """
+        Тестируем значение __str__  в модели Group
+        он должен возвращать название группы
+        """
 
         group = PostModelTest.group
         str_value = self.group.title
         self.assertEqual(str_value, group.__str__())
 
     def test_post_str_value(self):
-        """Тестируем длину __str__ значения в модели Post
-            он должен возвращать строку в 15 символов"""
+        """
+        Тестируем длину __str__ значения в модели Post
+        он должен возвращать строку в 15 символов
+        """
 
         max_length = 15
         len_post_str_value = len(self.post.__str__())

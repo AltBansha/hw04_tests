@@ -1,7 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 
 from .forms import PostForm
 from .models import Group, Post, User
@@ -46,7 +45,7 @@ def new_post(request):
     form = PostForm(request.POST or None)
     if request.method == 'GET' or not form.is_valid():
         return render(request, "posts/new.html", {"form": form})
-    
+
     post = form.save(commit=False)
     post.author = request.user
     form.save()
@@ -68,8 +67,8 @@ def profile(request, username):
 
 
 def post_view(request, username, post_id):
-    post = get_object_or_404(Post,id=post_id, author__username=username)
-    count = Post.objects.count()
+    post = get_object_or_404(Post, id=post_id, author__username=username)
+    count = Post.objects.filter(author=post.author).count()
     context = {"post": post,
                "author": post.author,
                "count": count}
