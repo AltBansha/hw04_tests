@@ -11,11 +11,15 @@ def index(request):
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
-    return render(request,
-                  "index.html",
-                  {"page": page,
-                   "post_list": post_list,
-                   "paginator": paginator})
+    return render(
+        request,
+        "index.html",
+        {
+            "page": page,
+            "post_list": post_list,
+            "paginator": paginator
+        }
+    )
 
 
 def group_posts(request, slug):
@@ -69,9 +73,11 @@ def profile(request, username):
 def post_view(request, username, post_id):
     post = get_object_or_404(Post, id=post_id, author__username=username)
     count = Post.objects.filter(author=post.author).count()
-    context = {"post": post,
-               "author": post.author,
-               "count": count}
+    context = {
+        "post": post,
+        "author": post.author,
+        "count": count,
+    }
     return render(request, "posts/post.html", context)
 
 
@@ -83,8 +89,7 @@ def post_edit(request, username, post_id):
     form = PostForm(request.POST or None, instance=post)
     if request.method == 'POST' and form.is_valid():
         post = form.save()
-        return redirect("post",
-                        username=username,
+        return redirect("post", username=username,
                         post_id=post_id)
 
     return render(request, "posts/new.html", {"form": form,

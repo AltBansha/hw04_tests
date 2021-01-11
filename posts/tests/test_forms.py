@@ -42,7 +42,7 @@ class NewPost_FormTest(TestCase):
             follow=True
         )
 
-        self.assertEqual(Post.objects.get(pk=1).text,
+        self.assertEqual(Post.objects.last().text,
                          NewPost_FormTest.form_data['text'])
 
 

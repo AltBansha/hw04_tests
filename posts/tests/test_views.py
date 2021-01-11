@@ -11,7 +11,8 @@ class PostPagesTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user_author = get_user_model().objects.create(
-            username='testuser')
+            username='testuser'
+        )
 
         Group.objects.bulk_create([
             Group(
