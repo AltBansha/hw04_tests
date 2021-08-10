@@ -1,1 +1,4 @@
-# hw04_tests
+# Тестирование проект Yatube
+
+## Стек:
+> Python 3, Django, Unittest
